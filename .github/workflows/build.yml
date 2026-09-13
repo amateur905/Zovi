@@ -2,43 +2,74 @@ name: Build Zovi
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-      - run: flutter create --platforms=android --project-name zovi --org com.zovi.demo .
-      - run: flutter pub get
-      - run: flutter build apk --release
-      - uses: actions/upload-artifact@v4
+          channel: stable
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Generate Android platform files
+        run: flutter create --platforms=android --project-name zovi --org com.zovi.demo .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: zovi-android
           path: build/app/outputs/flutter-apk/app-release.apk
 
   build-ios:
     runs-on: macos-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-      - run: flutter create --platforms=ios --project-name zovi --org com.zovi.demo .
-      - run: flutter pub get
-      - run: flutter build ios --release --no-codesign
-      - run: |
+          channel: stable
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Generate iOS platform files
+        run: flutter create --platforms=ios --project-name zovi --org com.zovi.demo .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (unsigned)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        run: |
           mkdir -p build/ios/iphoneos/Payload
           cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
           cd build/ios/iphoneos
           zip -r zovi-unsigned.ipa Payload
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
         with:
           name: zovi-ios
           path: build/ios/iphoneos/zovi-unsigned.ipa
